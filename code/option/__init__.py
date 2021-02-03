@@ -72,7 +72,7 @@ parser.add_argument('--epochs', type=int, default=600, # CZY
                     help='number of epochs to train')
 parser.add_argument('--train_batch_size', type=int, default=10,
                     help='input batch size for training')
-parser.add_argument('--test_batch_size', type=int, default=6,
+parser.add_argument('--test_batch_size', type=int, default=10,
                     help='input batch size for training')
 # parser.add_argument('--test_only', action='store_true',
 #                     help='set this option to test the model')
@@ -86,7 +86,7 @@ parser.add_argument('--lr', type=float, default=1e-4,
                     help='learning rate of reconstruction-net and kernel-net')
 parser.add_argument('--pwc_lr', type=float, default=1e-6,
                     help='learning rate of flow-net')
-parser.add_argument('--lr_decay', type=int, default=200,  # lr_decay:200->50
+parser.add_argument('--lr_decay', type=int, default=50,  # lr_decay:200->50
                     help='learning rate decay per N epochs') # 每200 epoch lr衰减
 parser.add_argument('--gamma', type=float, default=0.5, # 衰减系数（上一步的）
                     help='learning rate decay factor for step decay')

@@ -37,19 +37,25 @@ class Flow_PWC(nn.Module):
         intPreprocessedWidth = int(math.floor(math.ceil(intWidth / 64.0) * 64.0))
         intPreprocessedHeight = int(math.floor(math.ceil(intHeight / 64.0) * 64.0))
 
-        up1 = torch.nn.Upsample(size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=None)
+        # up1 = torch.nn.Upsample(size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=None) # CZY 1-22
+        up1 = torch.nn.Upsample(size=(intPreprocessedHeight, intPreprocessedWidth), mode='bicubic', align_corners=None)
 
         # tensorPreprocessedFirst = torch.nn.functional.interpolate(input=tensorFirst, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
         # tensorPreprocessedSecond = torch.nn.functional.interpolate(input=tensorSecond, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
         tensorPreprocessedFirst = up1(tensorFirst)
+        del tensorFirst
         tensorPreprocessedSecond = up1(tensorSecond)
+        del tensorSecond
 
         outputFlow = self.moduleNetwork(tensorPreprocessedFirst, tensorPreprocessedSecond)
+        del tensorPreprocessedFirst, tensorPreprocessedSecond
 
-        up2 = torch.nn.Upsample(size=(intHeight, intWidth), mode='bilinear', align_corners=None)
+        # up2 = torch.nn.Upsample(size=(intHeight, intWidth), mode='bilinear', align_corners=None) # CZY 1-22
+        up2 = torch.nn.Upsample(size=(intHeight, intWidth), mode='bicubic', align_corners=None)
 
         # tensorFlow = 20.0 * torch.nn.functional.interpolate(input=outputFlow, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
         tensorFlow = 20.0 * up2(outputFlow)
+        del outputFlow
 
         tensorFlow[:, 0, :, :] *= float(intWidth) / float(intPreprocessedWidth)
         tensorFlow[:, 1, :, :] *= float(intHeight) / float(intPreprocessedHeight)
@@ -69,26 +75,36 @@ class Flow_PWC(nn.Module):
         xx = xx.view(1, 1, H, W).repeat(B, 1, 1, 1)
         yy = yy.view(1, 1, H, W).repeat(B, 1, 1, 1)
         grid = torch.cat((xx, yy), 1).float()
+        del xx, yy
         grid = grid.to(self.device)
         vgrid = Variable(grid) + flo
+        del grid, flo
 
         # scale grid to [-1,1]
         vgrid[:, 0, :, :] = 2.0 * vgrid[:, 0, :, :].clone() / max(W - 1, 1) - 1.0
         vgrid[:, 1, :, :] = 2.0 * vgrid[:, 1, :, :].clone() / max(H - 1, 1) - 1.0
 
         vgrid = vgrid.permute(0, 2, 3, 1)
-        output = nn.functional.grid_sample(x, vgrid, padding_mode='border')
+        # output = nn.functional.grid_sample(x, vgrid, padding_mode='border') # CZY 1-22
+        output = nn.functional.grid_sample(x, vgrid) # 和原版一样，去除了padding
         mask = torch.autograd.Variable(torch.ones(x.size())).cuda()
+        del x
         mask = nn.functional.grid_sample(mask, vgrid)
+        del vgrid
 
         mask[mask < 0.999] = 0
         mask[mask > 0] = 1
 
         output = output * mask
+        del mask
 
         return output
 
     def forward(self, frame_1, frame_2):
+
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+
         # frame_2  -->  frame_1
         # flow
         flow = self.estimate_flow(frame_1, frame_2)
@@ -257,6 +273,9 @@ class Network(torch.nn.Module):
                 )
 
             def forward(self, tensorFirst, tensorSecond, objectPrevious):
+                if hasattr(torch.cuda, 'empty_cache'):
+                    torch.cuda.empty_cache() # 释放无关内存
+                    
                 tensorFlow = None
                 tensorFeat = None
 
@@ -340,6 +359,9 @@ class Network(torch.nn.Module):
         # self.load_state_dict(torch.load('./network-' + arguments_strModel + '.pytorch'))
 
     def forward(self, tensorFirst, tensorSecond):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+
         tensorFirst = self.moduleExtractor(tensorFirst)
         tensorSecond = self.moduleExtractor(tensorSecond)
 

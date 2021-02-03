@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -29,6 +30,8 @@ class FCNNET(nn.Module):
             self.softLayer = nn.DataParallel(self.softLayer) # mul_GPU
 
     def forward(self, x):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
 
         if self.fcn_number == 1:
             lineLayer1_out = self.lineLayer1(x)

@@ -97,6 +97,9 @@ class Deconv_Layer(nn.Module):
         return depth
 
     def forward(self, mid_frame_bic, kernel):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+            
         b, c, up_h, up_w = mid_frame_bic.size()
 
         # deconv

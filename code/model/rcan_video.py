@@ -26,6 +26,9 @@ class CALayer(nn.Module):
         # self.conv_du = nn.DataParallel(self.conv_du) # mul_GPU
 
     def forward(self, x):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+
         y = self.avg_pool(x)
         y = self.conv_du(y)
         return x * y
@@ -49,6 +52,9 @@ class RCAB(nn.Module):
         self.res_scale = res_scale
 
     def forward(self, x):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+
         res = self.body(x).mul(self.res_scale)
         res += x
         return res
@@ -123,7 +129,9 @@ class RCAN_VIDEO(nn.Module):
         self.tail = nn.DataParallel(self.tail) # mul_GPU
 
     def forward(self, x):
-
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+            
         b, n, c, h, w = x.size()
         x = x.view(b, n * c, h, w)
 

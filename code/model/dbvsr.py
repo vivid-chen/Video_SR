@@ -68,6 +68,9 @@ class DBVSR(nn.Module):
         return depth
 
     def forward(self, x, x_bicubic, kernel):
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache() # 释放无关内存
+            
         kernel = kernel[0]
         if not x.ndimension() == 5:
             raise Exception("x.ndimension must equal 5: see x.ndimension={}".format(x.ndimension()))
